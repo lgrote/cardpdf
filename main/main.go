@@ -59,7 +59,7 @@ func main() {
 	if count == 0 {
 		outFile.Close()
 		os.Remove(outputFile)
-		fmt.Printf("there is now jpg in %s no pdf was generated", directoryPath)
+		fmt.Printf("there is no jpg in %s so no pdf has been generated", directoryPath)
 	}
 }
 
