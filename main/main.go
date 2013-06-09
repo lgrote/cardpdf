@@ -29,37 +29,31 @@ func main() {
 	fmt.Printf("read files in directory: %s\n", directoryPath)
 	fmt.Printf("writing output to: %s\n", outputFile)
 
+	files := getMatchingFiles(directoryPath, func(fInfo os.FileInfo) bool {
+		return strings.HasSuffix(fInfo.Name(), ".jpg") || strings.HasSuffix(fInfo.Name(), ".jpeg")
+	})
+
+	if len(files) == 0 {
+		fmt.Printf("there is no jpg in %s so no pdf has been generated", directoryPath)
+		return
+	}
+
 	outFile := getOutputFile()
 	defer outFile.Close()
 	pdfWriter := cardpdf.NewPdfWriter(outFile)
 
-	files, err := ioutil.ReadDir(directoryPath)
-	if err != nil {
-		panic(err)
-	}
-
-	count := 0
 	for _, info := range files {
-		if strings.HasSuffix(info.Name(), ".jpg") || strings.HasSuffix(info.Name(), ".jpeg") {
-			file, err := os.Open(directoryPath + string(os.PathSeparator) + info.Name())
-			defer file.Close()
-			if err != nil {
-				panic(err)
-			}
-			img, _, err := image.Decode(file)
-			pdfWriter.WriteImage(img, getCountFromFileName(info.Name()))
-			count++
+		file, err := os.Open(directoryPath + string(os.PathSeparator) + info.Name())
+		defer file.Close()
+		if err != nil {
+			panic(err)
 		}
+		img, _, err := image.Decode(file)
+		pdfWriter.WriteImage(img, getCountFromFileName(info.Name()))
 	}
 
 	if err := pdfWriter.Close(); err != nil {
 		panic(err)
-	}
-
-	if count == 0 {
-		outFile.Close()
-		os.Remove(outputFile)
-		fmt.Printf("there is no jpg in %s so no pdf has been generated", directoryPath)
 	}
 }
 
@@ -78,4 +72,19 @@ func getOutputFile() *os.File {
 		panic(err)
 	}
 	return file
+}
+
+func getMatchingFiles(dir string, matches func(os.FileInfo) bool) []os.FileInfo {
+
+	matchingFiles := make([]os.FileInfo, 0)
+	files, err := ioutil.ReadDir(directoryPath)
+	if err != nil {
+		panic(err)
+	}
+	for _, fInfo := range files {
+		if matches(fInfo) {
+			matchingFiles = append(matchingFiles, fInfo)
+		}
+	}
+	return matchingFiles
 }
