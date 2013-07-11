@@ -84,8 +84,8 @@ func (this *PdfWriter) addImage(img image.Image) pdf.Reference {
 // draws an ImageReference in the pdf. The Image to be drawn needs to be added to the file first.
 func (this *PdfWriter) drawImageReference(ref pdf.Reference) {
 	this.page.DrawImageReference(ref, pdf.Rectangle{
-		Min: pdf.Point{X: this.current.X + cardBorderPadding, Y: this.current.Y + cardBorderPadding},
-		Max: pdf.Point{X: this.current.X + cardWidth - cardBorderPadding, Y: this.current.Y + cardHeight - cardBorderPadding},
+		Min: pdf.Point{X: this.current.X + this.cardBorderPadding(), Y: this.current.Y + this.cardBorderPadding()},
+		Max: pdf.Point{X: this.current.X + cardWidth - this.cardBorderPadding(), Y: this.current.Y + cardHeight - this.cardBorderPadding()},
 	})
 }
 
@@ -147,4 +147,10 @@ func (this *PdfWriter) Close() error {
 	}
 	this.page.Close()
 	return this.doc.Encode(this.writer)
+}
+func (this *PdfWriter) cardBorderPadding() pdf.Unit {
+	if this.Border {
+		return cardBorderPadding
+	}
+	return pdf.Inch * 0.0
 }
