@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/jpeg"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -98,4 +99,18 @@ func statTestOutputFile(t *testing.T, name string) os.FileInfo {
 		t.Fatalf("error getting stats for testfile %v", err)
 	}
 	return info
+}
+
+func ExampleCardBorderPadding() {
+
+	pdfWriter := NewPdfWriter(ioutil.Discard)
+
+	fmt.Printf("BorderPadding with border: %v\n", pdfWriter.cardBorderPadding())
+	pdfWriter.Border = false
+	fmt.Printf("BorderPadding without border: %v\n", pdfWriter.cardBorderPadding())
+
+	// Output:
+	//
+	// BorderPadding with border: 4.67775
+	// BorderPadding without border: 0.00000
 }
