@@ -6,6 +6,7 @@ import (
 	"github.com/lgrote/cardpdf"
 	"image"
 	_ "image/jpeg"
+	_ "image/png"
 	"io/ioutil"
 	"os"
 	"strconv"
