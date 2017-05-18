@@ -3,18 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/lgrote/cardpdf"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
+
+	"github.com/lgrote/cardpdf"
 )
 
 var directoryPath string
 var outputFile string
+var memprofile = flag.String("memprofile", "", "write memory profile to this file")
 
 func init() {
 	const (
@@ -55,6 +58,15 @@ func main() {
 
 	if err := pdfWriter.Close(); err != nil {
 		panic(err)
+	}
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			panic(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
 	}
 }
 
