@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
@@ -52,8 +51,9 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		img, _, err := image.Decode(file)
-		pdfWriter.WriteImage(img, getCountFromFileName(info.Name()))
+		//img, _, err := image.Decode(file)
+		fmt.Println("write image")
+		pdfWriter.WriteImage(file, info.Name(), getCountFromFileName(info.Name()))
 	}
 
 	if err := pdfWriter.Close(); err != nil {

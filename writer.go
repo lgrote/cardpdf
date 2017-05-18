@@ -1,37 +1,51 @@
 package cardpdf
 
 import (
-	"image"
 	"io"
 
-	"bitbucket.org/zombiezen/gopdf/pdf"
+	"github.com/jung-kurt/gofpdf"
 )
 
 const (
-	Cm                pdf.Unit = pdf.Cm
-	Inch              pdf.Unit = pdf.Inch
-	pageWidth         pdf.Unit = pdf.A4Width
-	pageHeight        pdf.Unit = pdf.A4Height
-	space             pdf.Unit = 0.00 * pdf.Cm
-	cropSpace         pdf.Unit = 0.5 * pdf.Cm
-	cropLineWidth     pdf.Unit = 0.1
-	markLength        pdf.Unit = 0.5 * pdf.Cm
-	cardWidth         pdf.Unit = 2.5 * pdf.Inch
-	cardHeight        pdf.Unit = 3.5 * pdf.Inch
-	cardBorderPadding pdf.Unit = 0.165 * pdf.Cm
-	mm                pdf.Unit = 0.1 * pdf.Cm
-	borderWidth       pdf.Unit = 0.4 * pdf.Cm
-	columns           int      = 3
-	rows              int      = 3
-	cardsPerPage      int      = columns * rows
-	defaultMargin     pdf.Unit = 2 * pdf.Cm
+	Pt                Unit = 1
+	Inch              Unit = 72
+	Cm                Unit = 28.35
+	Mm                Unit = Cm / 10
+	A4Width           Unit = 21.0 * Cm
+	A4Height          Unit = 29.7 * Cm
+	pageWidth         Unit = A4Width
+	pageHeight        Unit = A4Height
+	space             Unit = 0.00 * Cm
+	cropSpace         Unit = 0.5 * Cm
+	cropLineWidth     Unit = 0.1
+	markLength        Unit = 0.5 * Cm
+	cardWidth         Unit = 2.5 * Inch
+	cardHeight        Unit = 3.5 * Inch
+	cardBorderPadding Unit = 0.165 * Cm
+	borderWidth       Unit = 0.4 * Cm
+	columns           int  = 3
+	rows              int  = 3
+	cardsPerPage      int  = columns * rows
+	defaultMargin     Unit = 2 * Cm
 )
+
+// Unit is a device-independent dimensional type.  On a new canvas, this
+// represents 1/72 of an inch.
+type Unit float32
+
+// Point is a 2D point.
+type Point struct {
+	X, Y Unit
+}
 
 // retuns a new pdf writer. This writer writes Images to pdf file
 // the dimensions are definte as constants
-func NewPdfWriter(writer io.Writer) PdfWriter {
+func NewPdfWriter(writer io.WriteCloser) PdfWriter {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetDrawColor(0, 0, 0)
+	pdf.SetCompression(false)
 	return PdfWriter{
-		doc:         pdf.New(),
+		doc:         pdf,
 		writer:      writer,
 		Border:      true,
 		CropLines:   true,
@@ -47,125 +61,132 @@ func NewPdfWriter(writer io.Writer) PdfWriter {
 type PdfWriter struct {
 	Border, CropLines     bool
 	Columns, Rows         int
-	PageWidth, PageHeight pdf.Unit
-	BorderWidth, Space    pdf.Unit
+	PageWidth, PageHeight Unit
+	BorderWidth, Space    Unit
 
-	writer   io.Writer
-	doc      *pdf.Document
-	page     *pdf.Canvas
+	writer   io.WriteCloser
+	doc      *gofpdf.Fpdf
 	imgCount int
-	current  pdf.Point
+	current  Point
 }
 
 // writes an Image  n-times to the pdf file. With crop lines and black border
-func (this *PdfWriter) WriteImage(img image.Image, count int) {
-	ref := this.addImage(img)
+func (w *PdfWriter) WriteImage(r io.Reader, name string, count int) {
+
+	ref := w.addImage(r, name)
 	for i := 0; i < count; i++ {
-		this.setCurrentPoint()
-		if this.CropLines {
-			this.drawCropLines()
+		w.setCurrentPoint()
+		if w.CropLines {
+			w.drawCropLines()
 		}
-		this.drawImageReference(ref)
-		if this.Border {
-			this.drawBorder()
+		w.drawImageReference(name, ref)
+		if w.Border {
+			w.drawBorder()
 		}
-		this.imgCount++
+		w.imgCount++
 	}
+
 }
 
 // the last page is closed. The objects are encoded to
 // a pdf file and written to the given writer
-func (this *PdfWriter) Close() error {
-	if this.page == nil {
-		this.newPage()
-	}
-	this.page.Close()
-	return this.doc.Encode(this.writer)
+func (w *PdfWriter) Close() error {
+	return w.doc.OutputAndClose(w.writer)
 }
 
 // based on the imageCount the lower left corner of the next image is computed
-func (this *PdfWriter) setCurrentPoint() pdf.Point {
+func (w *PdfWriter) setCurrentPoint() Point {
 	switch {
-	case this.imgCount%this.cardsPerPage() == 0:
-		this.newPage()
-		this.current = pdf.Point{
-			X: this.marginLeft(),
-			Y: this.marginBottom() +
-				((pdf.Unit(this.Rows - 1)) * this.Space) +
-				(pdf.Unit((this.Rows - 1)) * cardHeight)}
-		return this.current
+	case w.imgCount%w.cardsPerPage() == 0:
+		w.newPage()
+		w.current = Point{
+			X: w.marginLeft(),
+			Y: w.marginBottom() +
+				((Unit(w.Rows - 1)) * w.Space) +
+				(Unit((w.Rows - 1)) * cardHeight)}
+		return w.current
 
-	case this.imgCount%this.Columns == 0:
-		this.current = pdf.Point{
-			X: this.marginLeft(),
-			Y: this.current.Y - this.Space - cardHeight}
-		return this.current
+	case w.imgCount%w.Columns == 0:
+		w.current = Point{
+			X: w.marginLeft(),
+			Y: w.current.Y - w.Space - cardHeight}
+		return w.current
 	}
-	this.current = pdf.Point{
-		X: this.current.X + this.Space + cardWidth,
-		Y: this.current.Y}
-	return this.current
+	w.current = Point{
+		X: w.current.X + w.Space + cardWidth,
+		Y: w.current.Y}
+	return w.current
 }
 
 // adds an Image to the pdf and returns its reference. Note that the Image
 // isn't yet drawn, it's just added.
-func (this *PdfWriter) addImage(img image.Image) pdf.Reference {
-	return this.doc.AddImage(img)
+func (w *PdfWriter) addImage(r io.Reader, name string) *gofpdf.ImageInfoType {
+	return w.doc.RegisterImageOptionsReader(name, gofpdf.ImageOptions{
+		ImageType: "JPG",
+		ReadDpi:   true,
+	}, r)
 }
 
 // draws an ImageReference in the pdf. The Image to be drawn needs to be added
 // to the file first.
-func (this *PdfWriter) drawImageReference(ref pdf.Reference) {
-	this.page.DrawImageReference(ref, pdf.Rectangle{
-		Min: pdf.Point{
-			X: this.current.X + this.cardBorderPadding(),
-			Y: this.current.Y + this.cardBorderPadding()},
-		Max: pdf.Point{
-			X: this.current.X + cardWidth - this.cardBorderPadding(),
-			Y: this.current.Y + cardHeight - this.cardBorderPadding()},
-	})
+
+func (w *PdfWriter) drawImageReference(name string, ref *gofpdf.ImageInfoType) {
+	w.doc.ImageOptions(name,
+		float64((w.current.X+w.cardBorderPadding())/Mm),
+		float64((w.current.Y+w.cardBorderPadding())/Mm),
+		float64(cardWidth/Mm),
+		float64(cardHeight/Mm),
+		false,
+		gofpdf.ImageOptions{
+			ImageType: "JPG",
+			ReadDpi:   true,
+		},
+		0,
+		"",
+	)
+	// w.page.DrawImageReference(ref, pdf.Rectangle{
+	// 	Min: pdf.Point{
+	// 		X: w.current.X + w.cardBorderPadding(),
+	// 		Y: w.current.Y + w.cardBorderPadding()},
+	// 	Max: pdf.Point{
+	// 		X: w.current.X + cardWidth - w.cardBorderPadding(),
+	// 		Y: w.current.Y + cardHeight - w.cardBorderPadding()},
+	// })
 }
 
 // draws a black border based on the current point
-func (this *PdfWriter) drawBorder() {
-	this.page.SetLineWidth(this.BorderWidth)
-	path := new(pdf.Path)
-	path.Move(pdf.Point{
-		X: this.current.X + mm,
-		Y: this.current.Y + mm})
-	path.Line(pdf.Point{
-		X: this.current.X + mm,
-		Y: this.current.Y + cardHeight - mm})
-	path.Line(pdf.Point{
-		X: this.current.X + cardWidth - mm,
-		Y: this.current.Y + cardHeight - mm})
-	path.Line(pdf.Point{
-		X: this.current.X + cardWidth - mm,
-		Y: this.current.Y + mm})
-	path.Line(pdf.Point{
-		X: this.current.X + mm - this.BorderWidth/2,
-		Y: this.current.Y + mm})
-	this.page.Stroke(path)
+func (w *PdfWriter) drawBorder() {
+	w.doc.SetLineWidth(float64(w.BorderWidth / Mm))
+	w.doc.MoveTo(float64((w.current.X+Mm)/Mm), float64((w.current.Y+Mm)/Mm))
+	w.lineTo(w.current.X+Mm, w.current.Y+cardHeight-Mm)
+	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+cardHeight-Mm)
+	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+Mm)
+	w.lineTo(w.current.X+Mm-w.BorderWidth/2, w.current.Y+Mm)
+	w.doc.ClosePath()
+	w.doc.DrawPath("D")
+}
+
+func (w *PdfWriter) lineTo(x, y Unit) {
+	w.doc.LineTo(float64(x/Mm), float64(y/Mm))
 }
 
 // draw a single line
-func (this *PdfWriter) drawLine(from, to pdf.Point) {
-	path := new(pdf.Path)
-	path.Move(from)
-	path.Line(to)
-	this.page.Stroke(path)
+func (w *PdfWriter) drawLine(from, to Point) {
+	w.doc.MoveTo(float64(from.X/Mm), float64(from.Y/Mm))
+	w.lineTo(to.X, to.Y)
+	w.doc.ClosePath()
+	w.doc.DrawPath("D")
 }
 
 // draws the crop lines based on the current point (8 per card)
-func (this *PdfWriter) drawCropLines() {
-	this.page.SetLineWidth(cropLineWidth)
-
+func (w *PdfWriter) drawCropLines() {
+	w.doc.SetLineWidth(float64(cropLineWidth))
 	for i := 0; i < 2; i++ {
-		swtch := pdf.Pt * pdf.Unit(float32(i))
+		swtch := Pt * Unit(float32(i))
 		/* on the first iteration one line is drawn on each side. The swtch is 0
 		so all the shifting by cardHeight or cardWidth is disabled. On the second
 		iteration the swtch is 1, meaning the shifting is turned on. On each side
-		one line is drawn, but this time shifted by cardHeight or cardWidth
+		one line is drawn, but w time shifted by cardHeight or cardWidth
 
 		First:
 		 |
@@ -181,69 +202,66 @@ func (this *PdfWriter) drawCropLines() {
 		*/
 
 		// left
-		this.drawLine(
-			pdf.Point{
-				X: this.current.X,
-				Y: this.current.Y + cardHeight*swtch},
-			pdf.Point{
-				X: this.current.X - cropSpace,
-				Y: this.current.Y + cardHeight*swtch})
+		w.drawLine(
+			Point{
+				X: w.current.X,
+				Y: w.current.Y + cardHeight*swtch},
+			Point{
+				X: w.current.X - cropSpace,
+				Y: w.current.Y + cardHeight*swtch})
 
 		// top
-		this.drawLine(
-			pdf.Point{
-				X: this.current.X + cardWidth*swtch,
-				Y: this.current.Y + cardHeight},
-			pdf.Point{
-				X: this.current.X + cardWidth*swtch,
-				Y: this.current.Y + cardHeight + cropSpace})
+		w.drawLine(
+			Point{
+				X: w.current.X + cardWidth*swtch,
+				Y: w.current.Y + cardHeight},
+			Point{
+				X: w.current.X + cardWidth*swtch,
+				Y: w.current.Y + cardHeight + cropSpace})
 
 		// right
-		this.drawLine(
-			pdf.Point{
-				X: this.current.X + cardWidth,
-				Y: this.current.Y + cardHeight*swtch},
-			pdf.Point{
-				X: this.current.X + cardWidth + cropSpace,
-				Y: this.current.Y + cardHeight*swtch})
+		w.drawLine(
+			Point{
+				X: w.current.X + cardWidth,
+				Y: w.current.Y + cardHeight*swtch},
+			Point{
+				X: w.current.X + cardWidth + cropSpace,
+				Y: w.current.Y + cardHeight*swtch})
 
 		// top
-		this.drawLine(
-			pdf.Point{
-				X: this.current.X + cardWidth*swtch,
-				Y: this.current.Y},
-			pdf.Point{
-				X: this.current.X + cardWidth*swtch,
-				Y: this.current.Y - cropSpace})
+		w.drawLine(
+			Point{
+				X: w.current.X + cardWidth*swtch,
+				Y: w.current.Y},
+			Point{
+				X: w.current.X + cardWidth*swtch,
+				Y: w.current.Y - cropSpace})
 	}
 }
 
 // closes the last page (if one exists) and creates a new empty one
-func (this *PdfWriter) newPage() {
-	if this.page != nil {
-		this.page.Close()
-	}
-	this.page = this.doc.NewPage(this.PageWidth, this.PageHeight)
+func (w *PdfWriter) newPage() {
+	w.doc.AddPage()
 }
 
-func (this *PdfWriter) cardsPerPage() int {
-	return this.Columns * this.Rows
+func (w *PdfWriter) cardsPerPage() int {
+	return w.Columns * w.Rows
 }
 
-func (this *PdfWriter) marginBottom() pdf.Unit {
-	return (this.PageHeight - (pdf.Unit(this.Rows)*cardHeight +
-		(pdf.Unit(this.Rows)-1)*space)) / 2
+func (w *PdfWriter) marginBottom() Unit {
+	return (w.PageHeight - (Unit(w.Rows)*cardHeight +
+		(Unit(w.Rows)-1)*space)) / 2
 }
 
-func (this *PdfWriter) marginLeft() pdf.Unit {
-	return (this.PageWidth - (pdf.Unit(this.Columns)*cardWidth +
-		(pdf.Unit(this.Columns)-1)*space)) / 2
+func (w *PdfWriter) marginLeft() Unit {
+	return (w.PageWidth - (Unit(w.Columns)*cardWidth +
+		(Unit(w.Columns)-1)*space)) / 2
 }
 
 // if PdfWriter.Border is true the default setting is returned, 0.0 otherwiese
-func (this *PdfWriter) cardBorderPadding() pdf.Unit {
-	if this.Border {
+func (w *PdfWriter) cardBorderPadding() Unit {
+	if w.Border {
 		return cardBorderPadding
 	}
-	return pdf.Unit(0.0)
+	return Unit(0.0)
 }
