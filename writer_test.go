@@ -55,8 +55,8 @@ func TestWriteTwoImagesNTimes(t *testing.T) {
 	}
 
 	fileSize := statTestOutputFile(t, outFileName).Size()
-	if fileSize < 740000 || fileSize > 750000 {
-		t.Errorf("expected file size > %d and < %d but was %d\n", 740000, 750000, fileSize)
+	if fileSize < 740000 || fileSize > 760000 {
+		t.Errorf("expected file size > %d and < %d but was %d\n", 740000, 760000, fileSize)
 	}
 
 	fmt.Printf("File: %s Size: %d\n", outFileName, fileSize)
