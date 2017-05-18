@@ -11,22 +11,22 @@ const (
 	Inch              Unit = 72
 	Cm                Unit = 28.35
 	Mm                Unit = Cm / 10
-	A4Width           Unit = 21.0 * Cm
-	A4Height          Unit = 29.7 * Cm
+	A4Width           Unit = 210 * Mm
+	A4Height          Unit = 297 * Mm
 	pageWidth         Unit = A4Width
 	pageHeight        Unit = A4Height
-	space             Unit = 0.00 * Cm
-	cropSpace         Unit = 0.5 * Cm
+	space             Unit = 0.00 * Mm
+	cropSpace         Unit = 5 * Mm
 	cropLineWidth     Unit = 0.1
-	markLength        Unit = 0.5 * Cm
+	markLength        Unit = 5 * Mm
 	cardWidth         Unit = 2.5 * Inch
 	cardHeight        Unit = 3.5 * Inch
-	cardBorderPadding Unit = 0.165 * Cm
-	borderWidth       Unit = 0.4 * Cm
+	cardBorderPadding Unit = 1.65 * Mm
+	borderWidth       Unit = 4 * Mm
 	columns           int  = 3
 	rows              int  = 3
 	cardsPerPage      int  = columns * rows
-	defaultMargin     Unit = 2 * Cm
+	defaultMargin     Unit = 20 * Mm
 )
 
 // Unit is a device-independent dimensional type.  On a new canvas, this
@@ -134,8 +134,8 @@ func (w *PdfWriter) drawImageReference(name string, ref *gofpdf.ImageInfoType) {
 	w.doc.ImageOptions(name,
 		float64((w.current.X+w.cardBorderPadding())/Mm),
 		float64((w.current.Y+w.cardBorderPadding())/Mm),
-		float64(cardWidth/Mm),
-		float64(cardHeight/Mm),
+		float64((cardWidth-(2*w.cardBorderPadding()))/Mm),
+		float64((cardHeight-(2*w.cardBorderPadding()))/Mm),
 		false,
 		gofpdf.ImageOptions{
 			ImageType: "JPG",
