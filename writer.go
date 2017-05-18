@@ -42,6 +42,7 @@ type Point struct {
 // the dimensions are definte as constants
 func NewPdfWriter(writer io.WriteCloser) PdfWriter {
 	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetAuthor("proxy-mat.appspot.com", true)
 	pdf.SetDrawColor(0, 0, 0)
 	pdf.SetCompression(false)
 	return PdfWriter{
