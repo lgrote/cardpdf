@@ -64,6 +64,13 @@ func TestWriteTwoImagesNTimes(t *testing.T) {
 	deleteTestOutpuFile(t, outFileName)
 }
 
+func TestImmediateClose(t *testing.T) {
+	pdfWriter := NewPdfWriter(ioutil.Discard)
+	if err := pdfWriter.Close(); err != nil {
+		t.Errorf("Expected no erro, but got: %s", err)
+	}
+}
+
 func getTestImage(t *testing.T, name string) image.Image {
 	file, err := os.Open("./testdata/" + name)
 	defer file.Close()

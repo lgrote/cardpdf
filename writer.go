@@ -73,6 +73,16 @@ func (this *PdfWriter) WriteImage(img image.Image, count int) {
 	}
 }
 
+// the last page is closed. The objects are encoded to
+// a pdf file and written to the given writer
+func (this *PdfWriter) Close() error {
+	if this.page == nil {
+		this.newPage()
+	}
+	this.page.Close()
+	return this.doc.Encode(this.writer)
+}
+
 // based on the imageCount the lower left corner of the next image is computed
 func (this *PdfWriter) setCurrentPoint() pdf.Point {
 	switch {
@@ -151,40 +161,57 @@ func (this *PdfWriter) drawCropLines() {
 	this.page.SetLineWidth(cropLineWidth)
 
 	for i := 0; i < 2; i++ {
+		swtch := pdf.Pt * pdf.Unit(float32(i))
 		/* on the first iteration one line is drawn on each side. The swtch is 0
 		so all the shifting by cardHeight or cardWidth is disabled. On the second
-		iteration the swtch is 1, meaning the shifting is turned on. One line on
-		each side is drawn, but this time shifted by cardHeight or cardWidth */
-		swtch := pdf.Pt * pdf.Unit(float32(i))
+		iteration the swtch is 1, meaning the shifting is turned on. On each side
+		one line is drawn, but this time shifted by cardHeight or cardWidth
+
+		First:
+		 |
+			–
+		–
+			|
+
+		Second
+			|
+		–
+			 –
+		 |
+		*/
 
 		// left
-		this.drawLine(pdf.Point{
-			X: this.current.X,
-			Y: this.current.Y + cardHeight*swtch},
+		this.drawLine(
+			pdf.Point{
+				X: this.current.X,
+				Y: this.current.Y + cardHeight*swtch},
 			pdf.Point{
 				X: this.current.X - cropSpace,
 				Y: this.current.Y + cardHeight*swtch})
 
 		// top
-		this.drawLine(pdf.Point{
-			X: this.current.X + cardWidth*swtch,
-			Y: this.current.Y + cardHeight},
+		this.drawLine(
+			pdf.Point{
+				X: this.current.X + cardWidth*swtch,
+				Y: this.current.Y + cardHeight},
 			pdf.Point{
 				X: this.current.X + cardWidth*swtch,
 				Y: this.current.Y + cardHeight + cropSpace})
 
 		// right
-		this.drawLine(pdf.Point{
-			X: this.current.X + cardWidth,
-			Y: this.current.Y + cardHeight*swtch},
+		this.drawLine(
+			pdf.Point{
+				X: this.current.X + cardWidth,
+				Y: this.current.Y + cardHeight*swtch},
 			pdf.Point{
 				X: this.current.X + cardWidth + cropSpace,
 				Y: this.current.Y + cardHeight*swtch})
 
 		// top
-		this.drawLine(pdf.Point{
-			X: this.current.X + cardWidth*swtch,
-			Y: this.current.Y},
+		this.drawLine(
+			pdf.Point{
+				X: this.current.X + cardWidth*swtch,
+				Y: this.current.Y},
 			pdf.Point{
 				X: this.current.X + cardWidth*swtch,
 				Y: this.current.Y - cropSpace})
@@ -199,16 +226,6 @@ func (this *PdfWriter) newPage() {
 	this.page = this.doc.NewPage(this.PageWidth, this.PageHeight)
 }
 
-// the last page is closed. The objects are encoded to
-// a pdf file and written to the given writer
-func (this *PdfWriter) Close() error {
-	if this.page == nil {
-		this.newPage()
-	}
-	this.page.Close()
-	return this.doc.Encode(this.writer)
-}
-
 func (this *PdfWriter) cardsPerPage() int {
 	return this.Columns * this.Rows
 }
@@ -217,6 +234,7 @@ func (this *PdfWriter) marginBottom() pdf.Unit {
 	return (this.PageHeight - (pdf.Unit(this.Rows)*cardHeight +
 		(pdf.Unit(this.Rows)-1)*space)) / 2
 }
+
 func (this *PdfWriter) marginLeft() pdf.Unit {
 	return (this.PageWidth - (pdf.Unit(this.Columns)*cardWidth +
 		(pdf.Unit(this.Columns)-1)*space)) / 2
