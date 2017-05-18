@@ -42,6 +42,7 @@ type Point struct {
 // the dimensions are definte as constants
 func NewPdfWriter(writer io.WriteCloser) PdfWriter {
 	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetTitle("Your Proxies", true)
 	pdf.SetAuthor("proxy-mat.appspot.com", true)
 	pdf.SetDrawColor(0, 0, 0)
 	pdf.SetCompression(false)
@@ -122,10 +123,12 @@ func (w *PdfWriter) setCurrentPoint() Point {
 // adds an Image to the pdf and returns its reference. Note that the Image
 // isn't yet drawn, it's just added.
 func (w *PdfWriter) addImage(r io.Reader, name string) *gofpdf.ImageInfoType {
-	return w.doc.RegisterImageOptionsReader(name, gofpdf.ImageOptions{
+	iit := w.doc.RegisterImageOptionsReader(name, gofpdf.ImageOptions{
 		ImageType: "JPG",
 		ReadDpi:   true,
 	}, r)
+	iit.SetDpi(300.0)
+	return iit
 }
 
 // draws an ImageReference in the pdf. The Image to be drawn needs to be added
@@ -140,7 +143,7 @@ func (w *PdfWriter) drawImageReference(name string, ref *gofpdf.ImageInfoType) {
 		false,
 		gofpdf.ImageOptions{
 			ImageType: "JPG",
-			ReadDpi:   true,
+			ReadDpi:   false,
 		},
 		0,
 		"",
