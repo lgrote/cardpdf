@@ -142,28 +142,19 @@ func (w *PdfWriter) drawImageReference(name string, ref *gofpdf.ImageInfoType) {
 		gofpdf.ImageOptions{
 			ImageType: "JPG",
 			ReadDpi:   false,
-		},
-		0,
-		"",
-	)
-	// w.page.DrawImageReference(ref, pdf.Rectangle{
-	// 	Min: pdf.Point{
-	// 		X: w.current.X + w.cardBorderPadding(),
-	// 		Y: w.current.Y + w.cardBorderPadding()},
-	// 	Max: pdf.Point{
-	// 		X: w.current.X + cardWidth - w.cardBorderPadding(),
-	// 		Y: w.current.Y + cardHeight - w.cardBorderPadding()},
-	// })
+		}, 0, "")
 }
 
 // draws a black border based on the current point
 func (w *PdfWriter) drawBorder() {
 	w.doc.SetLineWidth(float64(w.BorderWidth / Mm))
+
 	w.doc.MoveTo(float64((w.current.X+Mm)/Mm), float64((w.current.Y+Mm)/Mm))
 	w.lineTo(w.current.X+Mm, w.current.Y+cardHeight-Mm)
 	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+cardHeight-Mm)
 	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+Mm)
 	w.lineTo(w.current.X+Mm-w.BorderWidth/2, w.current.Y+Mm)
+
 	w.doc.ClosePath()
 	w.doc.DrawPath("D")
 }
@@ -176,8 +167,6 @@ func (w *PdfWriter) lineTo(x, y Unit) {
 func (w *PdfWriter) drawLine(from, to Point) {
 	w.doc.MoveTo(float64(from.X/Mm), float64(from.Y/Mm))
 	w.lineTo(to.X, to.Y)
-	w.doc.ClosePath()
-	w.doc.DrawPath("D")
 }
 
 // draws the crop lines based on the current point (8 per card)
@@ -239,6 +228,7 @@ func (w *PdfWriter) drawCropLines() {
 				X: w.current.X + cardWidth*swtch,
 				Y: w.current.Y - cropSpace})
 	}
+	w.doc.DrawPath("D")
 }
 
 // closes the last page (if one exists) and creates a new empty one
