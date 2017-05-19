@@ -40,12 +40,13 @@ type Point struct {
 
 // retuns a new pdf writer. This writer writes Images to pdf file
 // the dimensions are definte as constants
-func NewPdfWriter(writer io.WriteCloser) PdfWriter {
+func NewPdfWriter(writer io.Writer) PdfWriter {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetTitle("Your Proxies", true)
 	pdf.SetAuthor("proxy-mat.appspot.com", true)
 	pdf.SetDrawColor(0, 0, 0)
 	pdf.SetCompression(false)
+
 	return PdfWriter{
 		doc:         pdf,
 		writer:      writer,
@@ -66,7 +67,7 @@ type PdfWriter struct {
 	PageWidth, PageHeight Unit
 	BorderWidth, Space    Unit
 
-	writer   io.WriteCloser
+	writer   io.Writer
 	doc      *gofpdf.Fpdf
 	imgCount int
 	current  Point
@@ -93,11 +94,11 @@ func (w *PdfWriter) WriteImage(r io.Reader, name string, count int) {
 // the last page is closed. The objects are encoded to
 // a pdf file and written to the given writer
 func (w *PdfWriter) Close() error {
-	return w.doc.OutputAndClose(w.writer)
+	return w.doc.Output(w.writer)
 }
 
 // based on the imageCount the lower left corner of the next image is computed
-func (w *PdfWriter) setCurrentPoint() Point {
+func (w *PdfWriter) setCurrentPoint() {
 	switch {
 	case w.imgCount%w.cardsPerPage() == 0:
 		w.newPage()
@@ -106,18 +107,15 @@ func (w *PdfWriter) setCurrentPoint() Point {
 			Y: w.marginBottom() +
 				((Unit(w.Rows - 1)) * w.Space) +
 				(Unit((w.Rows - 1)) * cardHeight)}
-		return w.current
 
 	case w.imgCount%w.Columns == 0:
 		w.current = Point{
 			X: w.marginLeft(),
 			Y: w.current.Y - w.Space - cardHeight}
-		return w.current
 	}
 	w.current = Point{
 		X: w.current.X + w.Space + cardWidth,
 		Y: w.current.Y}
-	return w.current
 }
 
 // adds an Image to the pdf and returns its reference. Note that the Image
