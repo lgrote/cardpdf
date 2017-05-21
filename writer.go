@@ -131,9 +131,8 @@ func (w *PdfWriter) incrPosition() {
 func (w *PdfWriter) addImage(r io.Reader, name string) *gofpdf.ImageInfoType {
 	iit := w.doc.RegisterImageOptionsReader(name, gofpdf.ImageOptions{
 		ImageType: "JPG",
-		ReadDpi:   true,
+		ReadDpi:   false,
 	}, r)
-	iit.SetDpi(300.0)
 	return iit
 }
 
