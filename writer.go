@@ -20,20 +20,20 @@ const (
 	// A4Height in Points
 	A4Height Unit = 297 * Mm
 
-	pageWidth         Unit = A4Width
-	pageHeight        Unit = A4Height
-	space             Unit = 0.00 * Mm
+	// constants
 	cropSpace         Unit = 5 * Mm
 	cropLineWidth     Unit = 0.1
-	markLength        Unit = 5 * Mm
 	cardWidth         Unit = 2.5 * Inch
 	cardHeight        Unit = 3.5 * Inch
 	cardBorderPadding Unit = 1.65 * Mm
-	borderWidth       Unit = 4 * Mm
-	columns           int  = 3
-	rows              int  = 3
-	cardsPerPage      int  = columns * rows
-	defaultMargin     Unit = 20 * Mm
+
+	// defaults
+	columns     int  = 3
+	rows        int  = 3
+	pageWidth   Unit = A4Width
+	pageHeight  Unit = A4Height
+	borderWidth Unit = 4 * Mm
+	space       Unit = 0.00 * Mm
 )
 
 // Unit is a device-independent dimensional type. This represents 1/72 of an inch.
