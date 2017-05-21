@@ -43,7 +43,7 @@ func main() {
 
 	outFile := getOutputFile()
 	defer outFile.Close()
-	pdfWriter := cardpdf.NewPdfWriter(outFile)
+	pdfWriter := cardpdf.NewPdfWriter()
 
 	for _, info := range files {
 		file, err := os.Open(directoryPath + string(os.PathSeparator) + info.Name())
@@ -56,7 +56,7 @@ func main() {
 		pdfWriter.WriteImage(file, info.Name(), getCountFromFileName(info.Name()))
 	}
 
-	if err := pdfWriter.Close(); err != nil {
+	if err := pdfWriter.Output(outFile); err != nil {
 		panic(err)
 	}
 	if *memprofile != "" {
