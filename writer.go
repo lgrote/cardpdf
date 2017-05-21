@@ -153,27 +153,26 @@ func (w *PdfWriter) drawImage(name string) {
 
 // draws a black border based on the current position
 func (w *PdfWriter) drawBorder() {
+	lineTo := func(x, y Unit) {
+		w.doc.LineTo(float64(x/Mm), float64(y/Mm))
+	}
+
 	w.doc.SetLineWidth(float64(w.BorderWidth / Mm))
 
 	w.doc.MoveTo(float64((w.current.X+Mm)/Mm), float64((w.current.Y+Mm)/Mm))
-	w.lineTo(w.current.X+Mm, w.current.Y+cardHeight-Mm)
-	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+cardHeight-Mm)
-	w.lineTo(w.current.X+cardWidth-Mm, w.current.Y+Mm)
-	w.lineTo(w.current.X+Mm-w.BorderWidth/2, w.current.Y+Mm)
+	lineTo(w.current.X+Mm, w.current.Y+cardHeight-Mm)
+	lineTo(w.current.X+cardWidth-Mm, w.current.Y+cardHeight-Mm)
+	lineTo(w.current.X+cardWidth-Mm, w.current.Y+Mm)
+	lineTo(w.current.X+Mm-w.BorderWidth/2, w.current.Y+Mm)
 
 	w.doc.ClosePath()
 	w.doc.DrawPath("D")
 }
 
-// draws a line from the current position to the given coordinates.
-func (w *PdfWriter) lineTo(x, y Unit) {
-	w.doc.LineTo(float64(x/Mm), float64(y/Mm))
-}
-
 // draw a single line from point to point
 func (w *PdfWriter) drawLine(from, to Point) {
 	w.doc.MoveTo(float64(from.X/Mm), float64(from.Y/Mm))
-	w.lineTo(to.X, to.Y)
+	w.doc.LineTo(float64(to.X/Mm), float64(to.Y/Mm))
 }
 
 // draws crop lines based on the current position (8 per card)
