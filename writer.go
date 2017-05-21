@@ -251,14 +251,22 @@ func (w *PdfWriter) cardsPerPage() int {
 
 // the margin from the bottom of the page (same as from top of the page)
 func (w *PdfWriter) marginBottom() Unit {
-	return (w.PageHeight - (Unit(w.Rows)*cardHeight +
-		(Unit(w.Rows)-1)*space)) / 2
+	res := (w.PageHeight - (Unit(w.Rows)*cardHeight +
+		(Unit(w.Rows)-1)*w.Space)) / 2
+	if res > -1 {
+		return res
+	}
+	return -1
 }
 
 // the margin from the left of the page (same as from right of the page)
 func (w *PdfWriter) marginLeft() Unit {
-	return (w.PageWidth - (Unit(w.Columns)*cardWidth +
-		(Unit(w.Columns)-1)*space)) / 2
+	res := (w.PageWidth - (Unit(w.Columns)*cardWidth +
+		(Unit(w.Columns)-1)*w.Space)) / 2
+	if res > -1 {
+		return res
+	}
+	return -1
 }
 
 // if PdfWriter.Border is true the default setting is returned, 0.0 otherwiese
