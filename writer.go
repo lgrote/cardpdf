@@ -120,10 +120,13 @@ func (w *PdfWriter) incrPosition() {
 		w.current = Point{
 			X: w.marginLeft(),
 			Y: w.current.Y - w.Space - cardHeight}
+
+	default:
+		w.current = Point{
+			X: w.current.X + w.Space + cardWidth,
+			Y: w.current.Y}
 	}
-	w.current = Point{
-		X: w.current.X + w.Space + cardWidth,
-		Y: w.current.Y}
+
 }
 
 //addImage adds an Image to the pdf and returns its reference. Note that the Image
